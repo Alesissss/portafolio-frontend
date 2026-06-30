@@ -1,0 +1,30 @@
+name: Frontend CI (React + Vite)
+
+on:
+  push:
+    branches: ["develop", "main"]
+  pull_request:
+    branches: ["develop", "main"]
+
+jobs:
+  build-and-lint:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout de código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js (v22)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm' # Autoguarda los paquetes para que el próximo build vuele
+
+      - name: Instalar dependencias
+        run: npm ci # Instala de forma exacta lo que está en tu package-lock.json
+
+      - name: Validar Linter (ESLint)
+        run: npm run lint
+
+      - name: Compilar proyecto (Build)
+        run: npm run build
