@@ -1,7 +1,7 @@
 // src/context/AuthContext.tsx
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
-import { api, setToken } from '../api/axiosClient';
+import { setToken } from '../api/axiosClient';
 import type { LoginResponseDto, UsuarioDto } from '../api/types';
 import { authService } from '../api/authService';
 

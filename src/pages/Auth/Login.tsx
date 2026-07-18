@@ -1,36 +1,48 @@
 import { useState } from "react";
 import { TextInput, PasswordInput, Button, Container, Paper } from "@mantine/core";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { notifications } from "@mantine/notifications";
+import { useNavigate } from "react-router-dom";
+import { useForm } from "@mantine/form";
 
 export function Login() {
-  // función de login
   const { login } = useAuth();
-
-  // variables de entrada
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
   const [cargando, setCargando] = useState(false);
 
-  async function submitLogin(e: React.FormEvent) {
-    e.preventDefault();
+  const form = useForm({
+    mode: "controlled",
+    initialValues: {
+      username: "",
+      password: "",
+    },
+    validate: {
+      username: (value: string) =>
+        value.trim().length === 0 ? "El nombre de usuario es obligatorio" : null,
+      password: (value: string) =>
+        value.length === 0 ? "La contraseña es obligatoria" : null,
+    },
+  });
 
+  async function submitLogin(values: typeof form.values) {
     try {
       setCargando(true);
-      // Llamar a la función de login que hace la solicitud HTTP al endpoint de .NET
-      await login(username, password);
+      await login(values.username, values.password);
 
-      // login exitoso
       notifications.show({
         title: '¡Acceso concedido!',
         message: 'Inicio de sesión exitoso. Cargando tu panel...',
         color: 'green',
         autoClose: 3000,
       });
-    } catch (error: any) {
+
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 1000);
+    } catch (error) {
       notifications.show({
         title: 'Error al iniciar sesión',
-        message: error.message || 'No se pudo conectar con el servidor.',
+        message: error instanceof Error ? error.message : 'No se pudo conectar con el servidor.',
         color: 'red',
         autoClose: 5000,
       });
@@ -53,23 +65,19 @@ export function Login() {
 
       <Paper withBorder shadow="md" p={30} radius="md">
 
-        <form onSubmit={submitLogin}>
+        <form onSubmit={form.onSubmit(submitLogin)}>
 
           <TextInput
             label="Nombre de Usuario"
             placeholder="Ej. atorres"
-            required
-            value={username}
-            onChange={(e) => setUsername(e.currentTarget.value)}
+            {...form.getInputProps('username')}
           />
 
           <PasswordInput
             label="Contraseña"
             placeholder="Tu contraseña secreta"
-            required
-            mt="md" // mt = Margin Top mediano
-            value={password}
-            onChange={(e) => setPassword(e.currentTarget.value)}
+            mt="md"
+            {...form.getInputProps('password')}
           />
 
           <Button type="submit" fullWidth mt="xl" loading={cargando}>

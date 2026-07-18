@@ -1,8 +1,17 @@
-// src/api/axiosClient.ts
 import axios from 'axios';
+import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type { ApiResponse } from './types';
 
 export const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:5285';
+
+// Redefinimos la forma en que axios hace su AxiosResponse por el ApiResponse del backend
+type ApiClient = Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch' | 'delete'> & {
+  get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
+  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
+  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
+  patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
+  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
+};
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -10,7 +19,7 @@ export const api = axios.create({
     Accept: 'application/json',
     'Content-Type': 'application/json',
   },
-});
+}) as unknown as ApiClient;
 
 let token: string | null = null;
 

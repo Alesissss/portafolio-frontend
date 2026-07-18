@@ -24,7 +24,16 @@ export interface LoginRequestDto {
 
 export interface LoginResponseDto {
     token: string;
-    expirtation: string;
+    expiration: string;
     usuario: UsuarioDto;
 }
 
+// Dtos para controller de Categoria
+export interface CategoriaDto {
+    idCategoria: string;
+    nombre: string;
+    descripcion?: string;
+    estado: boolean;
+}
+
+export type RegistrarRequestCategoriaDto = CategoriaDto;
