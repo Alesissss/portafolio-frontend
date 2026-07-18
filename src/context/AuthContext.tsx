@@ -1,11 +1,9 @@
 // src/context/AuthContext.tsx
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
-import { setToken } from '../api/axiosClient';
+import { setToken, STORAGE_KEY } from '../api/axiosClient';
 import type { LoginResponseDto, UsuarioAuthDto } from '../api/types';
 import { authService } from '../api/authService';
-
-const STORAGE_KEY = 'portafolio.auth';
 
 interface AuthState {
   usuario: UsuarioAuthDto | null; // Guardamos el DTO de usuario completo en RAM de React
@@ -22,6 +20,13 @@ function restaurarSesion(): UsuarioAuthDto | null {
   if (!raw) return null;
   try {
     const sesion = JSON.parse(raw) as LoginResponseDto;
+    // Comodidad: si el token ya venció, no arrancamos siquiera con él (evita el 401 seguro).
+    // OJO: la autoridad real sigue siendo el servidor (el token puede ser inválido por otras
+    // razones); por eso el manejo del 401 en axiosClient es lo que NO puede faltar.
+    if (new Date(sesion.expiration) <= new Date()) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
     setToken(sesion.token);
     return sesion.usuario;
   } catch {

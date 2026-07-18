@@ -1,34 +1,36 @@
-import { useState } from "react";
 import { TextInput, PasswordInput, Button, Container, Paper } from "@mantine/core";
 import { useAuth } from "../../context/AuthContext";
 import { notifications } from "@mantine/notifications";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "@mantine/form";
+import { zod4Resolver } from "mantine-form-zod-resolver";
+import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+
+const loginSchema = z.object({
+  username: z.string().trim().min(1, "El nombre de usuario es obligatorio"),
+  password: z.string().min(1, "La contraseña es obligatoria"),
+});
+
+type LoginValues = z.infer<typeof loginSchema>;
 
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [cargando, setCargando] = useState(false);
 
-  const form = useForm({
+  const form = useForm<LoginValues>({
     mode: "controlled",
     initialValues: {
       username: "",
       password: "",
     },
-    validate: {
-      username: (value: string) =>
-        value.trim().length === 0 ? "El nombre de usuario es obligatorio" : null,
-      password: (value: string) =>
-        value.length === 0 ? "La contraseña es obligatoria" : null,
-    },
+
+    validate: zod4Resolver(loginSchema),
   });
 
-  async function submitLogin(values: typeof form.values) {
-    try {
-      setCargando(true);
-      await login(values.username, values.password);
-
+  const loginMutation = useMutation({
+    mutationFn: (values: typeof form.values) => login(values.username, values.password),
+    onSuccess: () => {
       notifications.show({
         title: '¡Acceso concedido!',
         message: 'Inicio de sesión exitoso. Cargando tu panel...',
@@ -39,17 +41,16 @@ export function Login() {
       setTimeout(() => {
         navigate('/', { replace: true });
       }, 1000);
-    } catch (error) {
+    },
+    onError: (error) => {
       notifications.show({
         title: 'Error al iniciar sesión',
         message: error instanceof Error ? error.message : 'No se pudo conectar con el servidor.',
         color: 'red',
         autoClose: 5000,
       });
-    } finally {
-      setCargando(false);
-    }
-  }
+    },
+  });
 
   return (
     <Container size={420} my={80}>
@@ -65,7 +66,7 @@ export function Login() {
 
       <Paper withBorder shadow="md" p={30} radius="md">
 
-        <form onSubmit={form.onSubmit(submitLogin)}>
+        <form onSubmit={form.onSubmit((values) => loginMutation.mutate(values))}>
 
           <TextInput
             label="Nombre de Usuario"
@@ -80,7 +81,7 @@ export function Login() {
             {...form.getInputProps('password')}
           />
 
-          <Button type="submit" fullWidth mt="xl" loading={cargando}>
+          <Button type="submit" fullWidth mt="xl" loading={loginMutation.isPending}>
             Iniciar Sesión
           </Button>
 

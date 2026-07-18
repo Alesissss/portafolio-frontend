@@ -1,38 +1,58 @@
-import { useEffect, useState } from "react";
 import { Badge, Button, Center, Group, Loader, Stack, Title, ActionIcon, Tooltip, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { modals } from "@mantine/modals";
 import { IconPencil, IconTrash, IconPlus, IconBan } from "@tabler/icons-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { productoService } from "../../api/productoService";
 import type { ProductoDto } from "../../api/types";
 import { DataTablePortafolio, type ColumnConfig } from "../../components/DataTablePortafolio";
 import { ProductoFormModal } from "./ProductoFormModal";
 
 export function Productos() {
-    const [productos, setProductos] = useState<ProductoDto[]>([]);
-    const [cargando, setCargando] = useState(true);
+    const queryClient = useQueryClient();
 
+    // Estado de UI del modal (sigue siendo useState).
     const [modalAbierto, setModalAbierto] = useState(false);
     const [productoEditar, setProductoEditar] = useState<ProductoDto | null>(null);
 
-    async function cargar() {
-        try {
-            setCargando(true);
-            const data = await productoService.listarProductos();
-            setProductos(data);
-        } catch (error) {
+    // Estado de servidor: la lista de productos.
+    const {
+        data: productos = [],
+        isLoading,
+        isError,
+        error,
+    } = useQuery({
+        queryKey: ["productos"],
+        queryFn: productoService.listarProductos,
+    });
+
+    // --- Mutaciones ---
+    const darBajaMutation = useMutation({
+        mutationFn: (id: number) => productoService.darBajaProducto(id),
+        onSuccess: () => {
+            notifications.show({ color: "green", message: "Producto dado de baja." });
+            queryClient.invalidateQueries({ queryKey: ["productos"] });
+        },
+        onError: (e) =>
             notifications.show({
                 color: "red",
-                message: error instanceof Error ? error.message : "No se pudieron cargar los productos.",
-            });
-        } finally {
-            setCargando(false);
-        }
-    }
+                message: e instanceof Error ? e.message : "No se pudo dar de baja al producto.",
+            }),
+    });
 
-    useEffect(() => {
-        cargar();
-    }, []);
+    const eliminarMutation = useMutation({
+        mutationFn: (id: number) => productoService.eliminarProducto(id),
+        onSuccess: () => {
+            notifications.show({ color: "green", message: "Producto eliminado." });
+            queryClient.invalidateQueries({ queryKey: ["productos"] });
+        },
+        onError: (e) =>
+            notifications.show({
+                color: "red",
+                message: e instanceof Error ? e.message : "No se pudo eliminar el producto.",
+            }),
+    });
 
     // --- Handlers de la UI ---
 
@@ -46,21 +66,6 @@ export function Productos() {
         setModalAbierto(true);
     }
 
-    async function darBaja(producto: ProductoDto) {
-        try {
-            await productoService.darBajaProducto(producto.idProducto);
-            notifications.show({ color: "green", message: "Producto dado de baja." });
-            cargar(); // recargamos para ver el estado nuevo
-        } catch (error) {
-            notifications.show({
-                color: "red",
-                message: error instanceof Error ? error.message : "No se pudo dar de baja al producto.",
-            });
-        }
-    }
-
-    // Abre el modal de confirmación (tematizado, reemplaza al window.confirm). Solo pregunta;
-    // el borrado real vive en `eliminar`, que se dispara en onConfirm.
     function confirmarEliminar(producto: ProductoDto) {
         modals.openConfirmModal({
             title: "Eliminar producto",
@@ -73,26 +78,11 @@ export function Productos() {
             ),
             labels: { confirm: "Eliminar", cancel: "Cancelar" },
             confirmProps: { color: "red" },
-            onConfirm: () => eliminar(producto),
+            onConfirm: () => eliminarMutation.mutate(producto.idProducto),
         });
     }
 
-    async function eliminar(producto: ProductoDto) {
-        try {
-            await productoService.eliminarProducto(producto.idProducto);
-            notifications.show({ color: "green", message: "Producto eliminado." });
-            cargar();
-        } catch (error) {
-            notifications.show({
-                color: "red",
-                message: error instanceof Error ? error.message : "No se pudo eliminar el producto.",
-            });
-        }
-    }
-
     // --- Columnas de la tabla ---
-    // Le decimos a tu DataTablePortafolio qué mostrar. `render` es solo para pintar distinto
-    // (badge, botones); el buscar/ordenar/exportar sigue usando el valor crudo del accessor.
     const columnas: ColumnConfig<ProductoDto>[] = [
         { header: "ID", accessor: "idProducto" },
         { header: "Nombre", accessor: "nombre" },
@@ -100,7 +90,6 @@ export function Productos() {
         {
             header: "Precio",
             accessor: "precio",
-            // render solo cambia lo que se VE; ordenar/exportar sigue usando el número crudo.
             render: (row) =>
                 `S/ ${row.precio.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         },
@@ -117,8 +106,8 @@ export function Productos() {
         },
         {
             header: "Acciones",
-            accessor: "idProducto", // apunta a un campo real, aunque no mostramos su texto
-            sortable: false,         // no tiene sentido ordenar por la columna de botones
+            accessor: "idProducto",
+            sortable: false,
             render: (row) => (
                 <Group gap="xs" wrap="nowrap">
                     <Tooltip label="Editar">
@@ -126,13 +115,12 @@ export function Productos() {
                             <IconPencil size={16} stroke={1.5} />
                         </ActionIcon>
                     </Tooltip>
-                    {/* Solo desactiva; se deshabilita si el producto ya está inactivo. */}
                     <Tooltip label={row.estado ? "Dar de baja" : "Ya está inactivo"}>
                         <ActionIcon
                             variant="light"
                             color="yellow"
-                            onClick={() => darBaja(row)}
-                            disabled={!row.estado}
+                            onClick={() => darBajaMutation.mutate(row.idProducto)}
+                            disabled={!row.estado || darBajaMutation.isPending}
                         >
                             <IconBan size={16} stroke={1.5} />
                         </ActionIcon>
@@ -156,21 +144,24 @@ export function Productos() {
                 </Button>
             </Group>
 
-            {/* Mientras carga por primera vez, un spinner; luego la tabla. */}
-            {cargando && productos.length === 0 ? (
+            {isLoading ? (
                 <Center py="xl">
                     <Loader />
+                </Center>
+            ) : isError ? (
+                <Center py="xl">
+                    <Text c="red">
+                        {error instanceof Error ? error.message : "No se pudieron cargar los productos."}
+                    </Text>
                 </Center>
             ) : (
                 <DataTablePortafolio data={productos} columns={columnas} fileName="Productos" />
             )}
 
-            {/* El modal SIEMPRE está montado; su prop `opened` decide si se ve. Al guardar,
-                onGuardado dispara cargar() para que la tabla refleje el cambio. */}
             <ProductoFormModal
                 opened={modalAbierto}
                 onClose={() => setModalAbierto(false)}
-                onGuardado={cargar}
+                onGuardado={() => queryClient.invalidateQueries({ queryKey: ["productos"] })}
                 producto={productoEditar}
             />
         </Stack>

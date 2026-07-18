@@ -7,6 +7,7 @@ import { Productos } from './pages/Productos/Productos';
 import { Usuarios } from './pages/Usuarios/Usuarios';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
+import { Ventas } from './pages/Ventas/Ventas';
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="categorias" element={<Categorias />} /> {/* URL: /categorias */}
             <Route path="productos" element={<Productos />} /> {/* URL: /productos */}
             <Route path="usuarios" element={<Usuarios />} /> {/* URL: /usuarios */}
+            <Route path="ventas" element={<Ventas />} /> {/* URL: /ventas */}
           </Route>
         </Route>
 

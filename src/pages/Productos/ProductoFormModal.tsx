@@ -1,11 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Modal, TextInput, Textarea, Switch, NumberInput, Button, Group, Stack } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { productoService } from "../../api/productoService";
 import { comboService } from "../../api/comboService";
-import type { ProductoDto, RegistrarRequestProductoDto, ComboDto } from "../../api/types";
+import type { ProductoDto, RegistrarRequestProductoDto } from "../../api/types";
 import { SearchableSelectPortafolio } from "../../components/SearchableSelectPortafolio";
+import { zod4Resolver } from "mantine-form-zod-resolver";
+import { z } from "zod";
+
+const productoSchema = z.object({
+    nombre: z.string().trim().min(1, "El nombre es obligatorio").max(50, "Máximo 50 caracteres"),
+    descripcion: z.string().trim().min(1, "La descripción es obligatoria").max(50, "Máximo 50 caracteres"),
+    stock: z.number().min(0, "El stock no puede ser negativo"),
+    precio: z.number().positive("El precio debe ser mayor que 0"),
+    idCategoria: z.string().min(1, "La categoría es obligatoria"),
+});
 
 interface ProductoFormModalProps {
     opened: boolean;
@@ -16,10 +27,14 @@ interface ProductoFormModalProps {
 
 export function ProductoFormModal({ opened, onClose, onGuardado, producto }: ProductoFormModalProps) {
     const esEdicion = producto !== null;
-    const [cargando, setCargando] = useState(false);
 
-    // Opciones del Select de categorías (ya vienen como { value, label } desde el combo).
-    const [categorias, setCategorias] = useState<ComboDto[]>([]);
+    // Opciones del Select de categorías. Con enabled:opened, solo se piden cuando el modal se abre
+    // (y quedan cacheadas: reabrir el modal no vuelve a pegarle al backend si siguen frescas).
+    const { data: categorias = [] } = useQuery({
+        queryKey: ["combos", "categorias"],
+        queryFn: comboService.listarCategoriasCombo,
+        enabled: opened,
+    });
 
     const form = useForm({
         mode: "controlled",
@@ -31,37 +46,8 @@ export function ProductoFormModal({ opened, onClose, onGuardado, producto }: Pro
             estado: true,
             idCategoria: "",
         },
-        validate: {
-            nombre: (value: string) => {
-                const v = value.trim();
-                if (v.length === 0) return "El nombre es obligatorio";
-                if (v.length > 50) return "Máximo 50 caracteres";
-                return null;
-            },
-            descripcion: (value: string) => {
-                const v = value.trim();
-                if (v.length === 0) return "La descripción es obligatoria";
-                if (v.length > 50) return "Máximo 50 caracteres";
-                return null;
-            },
-            stock: (value: number) => (value < 0 ? "El stock no puede ser negativo" : null),
-            precio: (value: number) => (value <= 0 ? "El precio debe ser mayor que 0" : null),
-            idCategoria: (value: string) => (value ? null : "La categoría es obligatoria"),
-        },
+        validate: zod4Resolver(productoSchema),
     });
-
-    // Listar categorías
-    useEffect(() => {
-        comboService
-            .listarCategoriasCombo()
-            .then(setCategorias)
-            .catch((error) =>
-                notifications.show({
-                    color: "red",
-                    message: error instanceof Error ? error.message : "No se pudieron cargar las categorías.",
-                })
-            );
-    }, [])
 
     // Form de crear/editar
     useEffect(() => {
@@ -83,10 +69,8 @@ export function ProductoFormModal({ opened, onClose, onGuardado, producto }: Pro
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [opened, producto]);
 
-    async function guardar(values: typeof form.values) {
-        try {
-            setCargando(true);
-
+    const guardarMutation = useMutation({
+        mutationFn: (values: typeof form.values) => {
             if (producto) {
                 // EDITAR: arrastramos el idProducto original (no se edita; no es campo del form).
                 const dto: ProductoDto = {
@@ -95,33 +79,31 @@ export function ProductoFormModal({ opened, onClose, onGuardado, producto }: Pro
                     nombre: values.nombre.trim(),
                     descripcion: values.descripcion.trim(),
                 };
-                await productoService.editarProducto(dto);
-            } else {
-                // CREAR: sin idProducto, lo genera la BD.
-                const dto: RegistrarRequestProductoDto = {
-                    ...values,
-                    nombre: values.nombre.trim(),
-                    descripcion: values.descripcion.trim(),
-                };
-                await productoService.registrarProducto(dto);
+                return productoService.editarProducto(dto);
             }
-
+            // CREAR: sin idProducto, lo genera la BD.
+            const dto: RegistrarRequestProductoDto = {
+                ...values,
+                nombre: values.nombre.trim(),
+                descripcion: values.descripcion.trim(),
+            };
+            return productoService.registrarProducto(dto);
+        },
+        onSuccess: () => {
             notifications.show({
                 color: "green",
                 message: esEdicion ? "Producto actualizado." : "Producto registrado.",
             });
-
             onGuardado();
             onClose();
-        } catch (error) {
+        },
+        onError: (error) => {
             notifications.show({
                 color: "red",
                 message: error instanceof Error ? error.message : "No se pudo guardar el producto.",
             });
-        } finally {
-            setCargando(false);
-        }
-    }
+        },
+    });
 
     return (
         <Modal
@@ -130,7 +112,7 @@ export function ProductoFormModal({ opened, onClose, onGuardado, producto }: Pro
             title={esEdicion ? "Editar producto" : "Nuevo producto"}
             centered
         >
-            <form onSubmit={form.onSubmit(guardar)}>
+            <form onSubmit={form.onSubmit((values) => guardarMutation.mutate(values))}>
                 <Stack gap="md">
 
                     <SearchableSelectPortafolio
@@ -181,10 +163,10 @@ export function ProductoFormModal({ opened, onClose, onGuardado, producto }: Pro
                     <Switch label="Activo" {...form.getInputProps("estado", { type: "checkbox" })} />
 
                     <Group justify="flex-end" mt="sm">
-                        <Button variant="default" onClick={onClose} disabled={cargando}>
+                        <Button variant="default" onClick={onClose} disabled={guardarMutation.isPending}>
                             Cancelar
                         </Button>
-                        <Button type="submit" loading={cargando}>
+                        <Button type="submit" loading={guardarMutation.isPending}>
                             {esEdicion ? "Guardar cambios" : "Registrar"}
                         </Button>
                     </Group>

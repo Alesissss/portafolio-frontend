@@ -100,3 +100,25 @@ export interface EditarRequestUsuarioDto {
     idRol: string;
     estado: boolean;
 }
+
+// Dtos para controller de venta
+export interface VentaDto {
+    idVenta: string; // Guid
+    fechaEmision: string; // ISO 8601 con offset (ej "2026-07-18T20:30:00+00:00"); convertir a Date solo al mostrar
+    subtotal: number;
+    igv: number;
+    total: number;
+    idVendedor: string; // Guid
+    nombreVendedor: string; // solo lectura: para mostrar en la tabla
+    idEstadoVenta: string;
+    nombreEstadoVenta: string; // solo lectura: para mostrar en la tabla
+    detalles: DetalleVentaDto[];
+}
+
+export interface DetalleVentaDto {
+    idProducto: number; // int en el back (SERIAL)
+    nombreProducto: string; // solo lectura
+    precioVenta: number;
+    cantidad: number;
+    observacion?: string; // nullable en el back
+}
