@@ -24,6 +24,8 @@ import {
     IconMoon,
     IconLayoutSidebarLeftCollapse,
     IconLayoutSidebarLeftExpand,
+    IconBrandDropbox,
+    IconUsers,
 } from "@tabler/icons-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -33,6 +35,8 @@ import { useAuth } from "../context/AuthContext";
 const NAV_ITEMS = [
     { label: "Inicio", to: "/", icon: IconHome },
     { label: "Categorías", to: "/categorias", icon: IconPackage },
+    { label: "Productos", to: "/productos", icon: IconBrandDropbox },
+    { label: "Usuarios", to: "/usuarios", icon: IconUsers },
 ];
 
 // Anchos del navbar en desktop: rail de solo íconos vs. barra completa.

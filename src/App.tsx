@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './pages/Auth/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Categorias } from './pages/Categorias/Categorias';
+import { Productos } from './pages/Productos/Productos';
+import { Usuarios } from './pages/Usuarios/Usuarios';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 
@@ -18,6 +20,8 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} /> {/* URL: / */}
             <Route path="categorias" element={<Categorias />} /> {/* URL: /categorias */}
+            <Route path="productos" element={<Productos />} /> {/* URL: /productos */}
+            <Route path="usuarios" element={<Usuarios />} /> {/* URL: /usuarios */}
           </Route>
         </Route>
 

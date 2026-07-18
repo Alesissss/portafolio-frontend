@@ -2,13 +2,13 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { setToken } from '../api/axiosClient';
-import type { LoginResponseDto, UsuarioDto } from '../api/types';
+import type { LoginResponseDto, UsuarioAuthDto } from '../api/types';
 import { authService } from '../api/authService';
 
 const STORAGE_KEY = 'portafolio.auth';
 
 interface AuthState {
-  usuario: UsuarioDto | null; // Guardamos el DTO de usuario completo en RAM de React
+  usuario: UsuarioAuthDto | null; // Guardamos el DTO de usuario completo en RAM de React
   estaAutenticado: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -17,7 +17,7 @@ interface AuthState {
 const AuthContext = createContext<AuthState | null>(null);
 
 // Restaura la sesión desde el disco
-function restaurarSesion(): UsuarioDto | null {
+function restaurarSesion(): UsuarioAuthDto | null {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
   try {
@@ -31,7 +31,7 @@ function restaurarSesion(): UsuarioDto | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<UsuarioDto | null>(restaurarSesion);
+  const [usuario, setUsuario] = useState<UsuarioAuthDto | null>(restaurarSesion);
 
   async function login(username: string, password: string) {
     const data = await authService.login({username, password});

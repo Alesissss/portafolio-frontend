@@ -28,7 +28,7 @@ import classes from "./Dashboard.module.css";
 // cromática de cada tile (ThemeIcon + Badge comparten ese color). 'activo' decide si es clickeable.
 const MODULOS = [
     { title: "Categorías", desc: "Mantenimiento de categorías de productos", color: "brand", icon: IconCategory, to: "/categorias", activo: true },
-    { title: "Productos", desc: "Inventario, precios y control de stock", color: "grape", icon: IconPackage, to: "#", activo: false },
+    { title: "Productos", desc: "Inventario, precios y control de stock", color: "grape", icon: IconPackage, to: "/productos", activo: true },
     { title: "Ventas", desc: "Cotizaciones, ventas e indicadores", color: "orange", icon: IconShoppingCart, to: "#", activo: false },
     { title: "Reportes", desc: "Exportables en Excel y PDF", color: "cyan", icon: IconReportAnalytics, to: "#", activo: false },
     { title: "Usuarios", desc: "Cuentas, roles y permisos", color: "blue", icon: IconUsers, to: "#", activo: false },
