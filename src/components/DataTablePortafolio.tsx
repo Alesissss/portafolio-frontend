@@ -22,6 +22,12 @@ export interface ColumnConfig<T> {
   sortable?: boolean;
 }
 
+// El texto "plano" de una celda: usado por buscador, Excel, PDF y copiar. Vive fuera del
+// componente porque solo depende de sus argumentos; así es estable y no ensucia deps de hooks.
+function getCellText<T>(row: T, col: ColumnConfig<T>): string {
+  return String(row[col.accessor] ?? '');
+}
+
 interface DataTablePortafolioProps<T> {
   data: T[];
   columns: ColumnConfig<T>[];
@@ -42,10 +48,6 @@ export function DataTablePortafolio<T>({
   const [debouncedSearch] = useDebouncedValue(search, 200);
   const [sortBy, setSortBy] = useState<keyof T | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-
-  // Helper: el texto "plano" de una celda, usado por buscador, Excel, PDF y copiar.
-  const getCellText = (row: T, col: ColumnConfig<T>): string =>
-    String(row[col.accessor] ?? '');
 
   // 2) Datos DERIVADOS, en dos pasos encadenados: primero filtrar, luego ordenar.
 

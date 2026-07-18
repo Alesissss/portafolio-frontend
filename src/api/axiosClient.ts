@@ -41,7 +41,7 @@ api.interceptors.response.use((response) => {
     return response.data;
   }
 
-  const apiResponse = response.data as ApiResponse<any>;
+  const apiResponse = response.data as ApiResponse<unknown>;
 
   if (apiResponse.status === false) {
     return Promise.reject(new Error(apiResponse.message || 'Error en la operación.'));
