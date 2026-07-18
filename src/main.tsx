@@ -1,10 +1,29 @@
-import { StrictMode } from 'react'
+import React from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+import { AuthProvider } from './context/AuthContext.tsx'
 import App from './App.tsx'
 
+// Imports de mantine
+import '@mantine/core/styles.css'; // Estilos base de Mantine
+import '@mantine/notifications/styles.css'; // Estilos para las alertas flotantes
+import { MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
+import { ModalsProvider } from '@mantine/modals';
+import { theme } from './theme';
+
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+  <React.StrictMode>
+    <MantineProvider theme={theme} defaultColorScheme="dark">
+      <Notifications position="top-right" zIndex={1000} />
+
+      {/* ModalsProvider habilita el API imperativo modals.open/openConfirmModal desde cualquier
+          componente (como SweetAlert). Debe envolver a la app, dentro de MantineProvider. */}
+      <ModalsProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </ModalsProvider>
+
+    </MantineProvider>
+  </React.StrictMode>,
+);
