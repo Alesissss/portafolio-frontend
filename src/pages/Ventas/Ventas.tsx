@@ -1,6 +1,6 @@
-import { Badge, Button, Center, Group, Loader, Stack, Text, Title } from "@mantine/core";
-import { IconPlus } from "@tabler/icons-react";
-import { notifications } from "@mantine/notifications";
+import { ActionIcon, Badge, Button, Center, Group, Loader, Stack, Text, Title, Tooltip } from "@mantine/core";
+import { IconEye, IconPencil, IconPlus } from "@tabler/icons-react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ventaService } from "../../api/ventaService";
 import type { VentaDto } from "../../api/types";
@@ -22,6 +22,8 @@ function colorEstado(idEstado: string): string {
 }
 
 export function Ventas() {
+    const navigate = useNavigate();
+
     // ANTES: 2 useState (ventas + cargando) + función cargar + useEffect + try/catch.
     // AHORA: una sola llamada. useQuery se encarga del fetch, el loading, el error y la caché.
     // - data:      lo que devolvió listarVentas (le damos [] por defecto mientras no hay datos).
@@ -73,6 +75,39 @@ export function Ventas() {
             accessor: "total",
             render: (row) => <Text fw={700}>{soles(row.total)}</Text>,
         },
+        {
+            header: "Acciones",
+            accessor: "idVenta",
+            sortable: false,
+            render: (row) => (
+                <Group gap="xs" wrap="nowrap">
+                    <Tooltip label="Ver detalle">
+                        <ActionIcon
+                            variant="light"
+                            color="brand"
+                            onClick={() => navigate(`/ventas/${row.idVenta}`)}
+                        >
+                            <IconEye size={16} stroke={1.5} />
+                        </ActionIcon>
+                    </Tooltip>
+
+                    {/* Editar solo tiene sentido en Borrador: generada/pagada/anulada son
+                        inmutables y el backend las rechaza. Mejor no ofrecer el botón que
+                        dejar al usuario chocar contra un error. */}
+                    {row.idEstadoVenta === "BO" && (
+                        <Tooltip label="Editar">
+                            <ActionIcon
+                                variant="light"
+                                color="gray"
+                                onClick={() => navigate(`/ventas/${row.idVenta}/editar`)}
+                            >
+                                <IconPencil size={16} stroke={1.5} />
+                            </ActionIcon>
+                        </Tooltip>
+                    )}
+                </Group>
+            ),
+        },
     ];
 
     return (
@@ -81,13 +116,7 @@ export function Ventas() {
                 <Title order={2}>Listado de Ventas</Title>
                 <Button
                     leftSection={<IconPlus size={18} stroke={1.5} />}
-                    // TODO: cuando exista la pantalla de registro, navegar a ella (navigate("/ventas/nueva"))
-                    onClick={() =>
-                        notifications.show({
-                            color: "blue",
-                            message: "La pantalla de registro de ventas está en construcción.",
-                        })
-                    }
+                    onClick={() => navigate("/ventas/nueva")}
                 >
                     Nueva Venta
                 </Button>

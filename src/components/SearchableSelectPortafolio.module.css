@@ -1,0 +1,19 @@
+/* El input es un select, no un campo de texto libre: el cursor lo delata como
+   "clickeable" aunque por dentro sea un <input> (necesario para poder buscar). */
+/* Nota: NO se oculta el caret. Por dentro ES un <input> y en listas largas el
+   usuario va a escribir para filtrar: quedarse sin saber dónde está el cursor
+   molesta más que ver la barrita parpadear mientras elige. */
+.input {
+    cursor: pointer;
+}
+
+/* La opción YA elegida tiene que gritar que es la elegida: fondo de marca,
+   texto en negrita y una barra lateral. Antes solo la distinguía un check gris
+   casi invisible al extremo derecho, obligando a comparar contra el texto de arriba.
+   `data-checked` lo pone Mantine en la opción cuyo value == value del Select. */
+.option[data-checked] {
+    background-color: var(--mantine-color-brand-light);
+    color: var(--mantine-color-brand-light-color);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 0 var(--mantine-primary-color-filled);
+}

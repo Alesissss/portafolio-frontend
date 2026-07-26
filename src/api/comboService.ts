@@ -1,5 +1,5 @@
 import { api } from "./axiosClient";
-import type { ComboDto } from "./types";
+import type { ComboDto, ProductoComboDto } from "./types";
 
 // Combos: listados mínimos (value + label) para poblar selects, sin depender de los
 // permisos del CRUD dueño de esos datos.
@@ -11,4 +11,11 @@ export const comboService = {
     // Roles activos para el <Select>
     listarRolesCombo: (): Promise<ComboDto[]> =>
         api.get<ComboDto[]>('/api/combo/roles'),
+
+    // Listar productos para la venta (con stock y precio referencial)
+    listarProductosCombo: (): Promise<ProductoComboDto[]> =>
+        api.get<ProductoComboDto[]>('/api/combo/productos'),
+
+    listarVendedoresCombo: (): Promise<ComboDto[]> =>
+        api.get<ComboDto[]>('/api/combo/vendedores'),
 };

@@ -8,6 +8,8 @@ import { Usuarios } from './pages/Usuarios/Usuarios';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { Ventas } from './pages/Ventas/Ventas';
+import { VentaForm } from './pages/Ventas/VentaForm';
+import { VentaDetalle } from './pages/Ventas/VentaDetalle';
 
 export default function App() {
   return (
@@ -24,6 +26,9 @@ export default function App() {
             <Route path="productos" element={<Productos />} /> {/* URL: /productos */}
             <Route path="usuarios" element={<Usuarios />} /> {/* URL: /usuarios */}
             <Route path="ventas" element={<Ventas />} /> {/* URL: /ventas */}
+            <Route path="ventas/nueva" element={<VentaForm />} /> {/* URL: /ventas/nueva */}
+            <Route path="ventas/:id" element={<VentaDetalle />} /> {/* URL: /ventas/:id */}
+            <Route path="ventas/:id/editar" element={<VentaForm />} /> {/* URL: /ventas/:id/editar */}
           </Route>
         </Route>
 

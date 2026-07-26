@@ -1,10 +1,10 @@
-import { Badge, Button, Center, Group, Loader, Stack, Title, ActionIcon, Tooltip, Text } from "@mantine/core";
+import { Avatar, Badge, Button, Center, Group, Loader, Stack, Title, ActionIcon, Tooltip, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { modals } from "@mantine/modals";
 import { IconPencil, IconTrash, IconPlus, IconBan } from "@tabler/icons-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { productoService } from "../../api/productoService";
+import { productoService, urlFotoProducto } from "../../api/productoService";
 import type { ProductoDto } from "../../api/types";
 import { DataTablePortafolio, type ColumnConfig } from "../../components/DataTablePortafolio";
 import { ProductoFormModal } from "./ProductoFormModal";
@@ -85,6 +85,18 @@ export function Productos() {
     // --- Columnas de la tabla ---
     const columnas: ColumnConfig<ProductoDto>[] = [
         { header: "ID", accessor: "idProducto" },
+        {
+            header: "Foto",
+            accessor: "archivoFoto",
+            sortable: false,
+            // Avatar en vez de Image: si no hay foto muestra la inicial del producto
+            // en lugar de un hueco roto, y mantiene todas las filas de la misma altura.
+            render: (row) => (
+                <Avatar src={urlFotoProducto(row.archivoFoto)} radius="sm" size={40}>
+                    {row.nombre.charAt(0)}
+                </Avatar>
+            ),
+        },
         { header: "Nombre", accessor: "nombre" },
         { header: "Descripción", accessor: "descripcion" },
         {

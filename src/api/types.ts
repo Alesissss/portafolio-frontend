@@ -46,6 +46,10 @@ export interface ProductoDto {
     precio: number;
     stock: number;
     estado: boolean;
+    // Ruta relativa dentro de wwwroot ("imagenes/productos/abc.jpg") o null si no tiene foto.
+    // Se concatena con BASE_URL para armar el <img src>. Es solo lectura: la foto se envía
+    // como archivo aparte, no en este campo.
+    archivoFoto?: string | null;
     idCategoria: string;
     nombreCategoria?: string; // solo lectura: el backend lo devuelve para mostrar el nombre en la tabla
 }
@@ -63,6 +67,11 @@ export interface RegistrarRequestProductoDto {
 export interface ComboDto {
     value: string;
     label: string;
+}
+
+export interface ProductoComboDto extends ComboDto {
+    precio: number;
+    stock: number;
 }
 
 // Dtos para controller de Usuario (CRUD; independientes del UsuarioAuthDto del login)
@@ -121,4 +130,27 @@ export interface DetalleVentaDto {
     precioVenta: number;
     cantidad: number;
     observacion?: string; // nullable en el back
+}
+
+export interface RegistrarRequestVentaDto {
+    idVendedor: string;
+    detalles: RegistrarDetalleVentaDto[];
+}
+
+export interface RegistrarDetalleVentaDto {
+    idProducto: number;
+    cantidad: number;
+    observacion?: string;
+}
+
+export interface EditarRequestVentaDto {
+    idVenta: string;
+    idVendedor: string;
+    detalles: EditarDetalleVentaDto[];
+}
+
+export interface EditarDetalleVentaDto {
+    idProducto: number;
+    cantidad: number;
+    observacion?: string;
 }

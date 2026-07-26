@@ -4,15 +4,8 @@ import { notifications } from "@mantine/notifications";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "@mantine/form";
 import { zod4Resolver } from "mantine-form-zod-resolver";
-import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
-
-const loginSchema = z.object({
-  username: z.string().trim().min(1, "El nombre de usuario es obligatorio"),
-  password: z.string().min(1, "La contraseña es obligatoria"),
-});
-
-type LoginValues = z.infer<typeof loginSchema>;
+import { loginSchema, type LoginValues } from "../../schemas/authSchema";
 
 export function Login() {
   const { login } = useAuth();

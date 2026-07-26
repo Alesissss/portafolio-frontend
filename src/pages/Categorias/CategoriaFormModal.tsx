@@ -6,13 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { categoriaService } from "../../api/categoriaService";
 import type { CategoriaDto } from "../../api/types";
 import { zod4Resolver } from "mantine-form-zod-resolver";
-import { z } from "zod";
-
-const categoriaSchema = z.object({
-    idCategoria: z.string().trim().min(1, "El código es obligatorio").max(3, "Máximo 3 caracteres"),
-    nombre: z.string().trim().min(1, "El nombre es obligatorio").max(30, "Máximo 30 caracteres"),
-    descripcion: z.string().trim().max(255, "Máximo 255 caracteres"),
-});
+import { categoriaSchema } from "../../schemas/categoriaSchema";
 
 interface CategoriaFormModalProps {
     opened: boolean;

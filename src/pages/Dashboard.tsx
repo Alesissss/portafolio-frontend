@@ -29,9 +29,9 @@ import classes from "./Dashboard.module.css";
 const MODULOS = [
     { title: "Categorías", desc: "Mantenimiento de categorías de productos", color: "brand", icon: IconCategory, to: "/categorias", activo: true },
     { title: "Productos", desc: "Inventario, precios y control de stock", color: "grape", icon: IconPackage, to: "/productos", activo: true },
-    { title: "Ventas", desc: "Cotizaciones, ventas e indicadores", color: "orange", icon: IconShoppingCart, to: "#", activo: false },
+    { title: "Ventas", desc: "Registro de ventas y flujo de estados", color: "orange", icon: IconShoppingCart, to: "/ventas", activo: true },
     { title: "Reportes", desc: "Exportables en Excel y PDF", color: "cyan", icon: IconReportAnalytics, to: "#", activo: false },
-    { title: "Usuarios", desc: "Cuentas, roles y permisos", color: "blue", icon: IconUsers, to: "#", activo: false },
+    { title: "Usuarios", desc: "Cuentas y roles", color: "blue", icon: IconUsers, to: "/usuarios", activo: true },
     { title: "Configuración", desc: "Preferencias y apariencia", color: "pink", icon: IconSettings, to: "#", activo: false },
 ];
 
