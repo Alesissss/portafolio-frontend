@@ -1,111 +1,124 @@
-import { Badge, Button, Center, Group, Loader, Stack, Title, ActionIcon, Tooltip, Text } from "@mantine/core";
+import { Avatar, Badge, Button, Center, Group, Loader, Stack, Title, ActionIcon, Tooltip, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { modals } from "@mantine/modals";
 import { IconPencil, IconTrash, IconPlus, IconBan } from "@tabler/icons-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { categoriaService } from "../../api/categoriaService";
-import type { CategoriaDto } from "../../api/types";
+import { productoService, urlFotoProducto } from "../../api/productoService";
+import type { ProductoDto } from "../../api/types";
 import { DataTablePortafolio, type ColumnConfig } from "../../components/DataTablePortafolio";
-import { CategoriaFormModal } from "./CategoriaFormModal";
+import { ProductoFormModal } from "./ProductoFormModal";
 
-export function Categorias() {
+export function Productos() {
     const queryClient = useQueryClient();
 
-    // Cambiar categorías afecta a DOS cachés: la lista de categorías y el combo de categorías
-    // (que usa el form de Productos). Por eso invalidamos ambas: los <Select> se refrescan solos.
-    function invalidarCategorias() {
-        queryClient.invalidateQueries({ queryKey: ["categorias"] });
-        queryClient.invalidateQueries({ queryKey: ["combos", "categorias"] });
-    }
-
-    // Estado de UI del modal.
+    // Estado de UI del modal (sigue siendo useState).
     const [modalAbierto, setModalAbierto] = useState(false);
-    const [categoriaEditar, setCategoriaEditar] = useState<CategoriaDto | null>(null);
+    const [productoEditar, setProductoEditar] = useState<ProductoDto | null>(null);
 
-    // Estado de servidor: la lista de categorías.
+    // Estado de servidor: la lista de productos.
     const {
-        data: categorias = [],
+        data: productos = [],
         isLoading,
         isError,
         error,
     } = useQuery({
-        queryKey: ["categorias"],
-        queryFn: categoriaService.listarCategorias,
+        queryKey: ["productos"],
+        queryFn: productoService.listarProductos,
     });
 
     // --- Mutaciones ---
     const darBajaMutation = useMutation({
-        mutationFn: (id: string) => categoriaService.darBajaCategoria(id),
+        mutationFn: (id: number) => productoService.darBajaProducto(id),
         onSuccess: () => {
-            notifications.show({ color: "green", message: "Categoría dada de baja." });
-            invalidarCategorias();
+            notifications.show({ color: "green", message: "Producto dado de baja." });
+            queryClient.invalidateQueries({ queryKey: ["productos"] });
         },
         onError: (e) =>
             notifications.show({
                 color: "red",
-                message: e instanceof Error ? e.message : "No se pudo dar de baja la categoría.",
+                message: e instanceof Error ? e.message : "No se pudo dar de baja al producto.",
             }),
     });
 
     const eliminarMutation = useMutation({
-        mutationFn: (id: string) => categoriaService.eliminarCategoria(id),
+        mutationFn: (id: number) => productoService.eliminarProducto(id),
         onSuccess: () => {
-            notifications.show({ color: "green", message: "Categoría eliminada." });
-            invalidarCategorias();
+            notifications.show({ color: "green", message: "Producto eliminado." });
+            queryClient.invalidateQueries({ queryKey: ["productos"] });
         },
         onError: (e) =>
             notifications.show({
                 color: "red",
-                message: e instanceof Error ? e.message : "No se pudo eliminar la categoría.",
+                message: e instanceof Error ? e.message : "No se pudo eliminar el producto.",
             }),
     });
 
     // --- Handlers de la UI ---
 
     function abrirCrear() {
-        setCategoriaEditar(null);
+        setProductoEditar(null);
         setModalAbierto(true);
     }
 
-    function abrirEditar(categoria: CategoriaDto) {
-        setCategoriaEditar(categoria);
+    function abrirEditar(producto: ProductoDto) {
+        setProductoEditar(producto);
         setModalAbierto(true);
     }
 
-    function confirmarEliminar(categoria: CategoriaDto) {
+    function confirmarEliminar(producto: ProductoDto) {
         modals.openConfirmModal({
-            title: "Eliminar categoría",
+            title: "Eliminar producto",
             centered: true,
             children: (
                 <Text size="sm">
-                    ¿Seguro que deseas eliminar la categoría <b>{categoria.nombre}</b>? Esta acción no se
+                    ¿Seguro que deseas eliminar el producto <b>{producto.nombre}</b>? Esta acción no se
                     puede deshacer.
                 </Text>
             ),
             labels: { confirm: "Eliminar", cancel: "Cancelar" },
             confirmProps: { color: "red" },
-            onConfirm: () => eliminarMutation.mutate(categoria.idCategoria),
+            onConfirm: () => eliminarMutation.mutate(producto.idProducto),
         });
     }
 
     // --- Columnas de la tabla ---
-    const columnas: ColumnConfig<CategoriaDto>[] = [
-        { header: "Código", accessor: "idCategoria" },
+    const columnas: ColumnConfig<ProductoDto>[] = [
+        { header: "ID", accessor: "idProducto" },
+        {
+            header: "Foto",
+            accessor: "archivoFoto",
+            sortable: false,
+            // Avatar en vez de Image: si no hay foto muestra la inicial del producto
+            // en lugar de un hueco roto, y mantiene todas las filas de la misma altura.
+            render: (row) => (
+                <Avatar src={urlFotoProducto(row.archivoFoto)} radius="sm" size={40}>
+                    {row.nombre.charAt(0)}
+                </Avatar>
+            ),
+        },
         { header: "Nombre", accessor: "nombre" },
         { header: "Descripción", accessor: "descripcion" },
+        {
+            header: "Precio",
+            accessor: "precio",
+            render: (row) =>
+                `S/ ${row.precio.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        },
+        { header: "Stock", accessor: "stock" },
+        { header: "Categoría", accessor: "nombreCategoria" },
         {
             header: "Estado",
             accessor: "estado",
             render: (row) => (
                 <Badge color={row.estado ? "brand" : "gray"} variant="light">
-                    {row.estado ? "Activa" : "Inactiva"}
+                    {row.estado ? "Activo" : "Inactivo"}
                 </Badge>
             ),
         },
         {
             header: "Acciones",
-            accessor: "idCategoria",
+            accessor: "idProducto",
             sortable: false,
             render: (row) => (
                 <Group gap="xs" wrap="nowrap">
@@ -114,11 +127,11 @@ export function Categorias() {
                             <IconPencil size={16} stroke={1.5} />
                         </ActionIcon>
                     </Tooltip>
-                    <Tooltip label={row.estado ? "Dar de baja" : "Ya está inactiva"}>
+                    <Tooltip label={row.estado ? "Dar de baja" : "Ya está inactivo"}>
                         <ActionIcon
                             variant="light"
                             color="yellow"
-                            onClick={() => darBajaMutation.mutate(row.idCategoria)}
+                            onClick={() => darBajaMutation.mutate(row.idProducto)}
                             disabled={!row.estado || darBajaMutation.isPending}
                         >
                             <IconBan size={16} stroke={1.5} />
@@ -137,9 +150,9 @@ export function Categorias() {
     return (
         <Stack gap="lg">
             <Group justify="space-between">
-                <Title order={2}>Mantenimiento de Categorías</Title>
+                <Title order={2}>Mantenimiento de Productos</Title>
                 <Button leftSection={<IconPlus size={18} stroke={1.5} />} onClick={abrirCrear}>
-                    Nueva categoría
+                    Nuevo Producto
                 </Button>
             </Group>
 
@@ -150,18 +163,18 @@ export function Categorias() {
             ) : isError ? (
                 <Center py="xl">
                     <Text c="red">
-                        {error instanceof Error ? error.message : "No se pudieron cargar las categorías."}
+                        {error instanceof Error ? error.message : "No se pudieron cargar los productos."}
                     </Text>
                 </Center>
             ) : (
-                <DataTablePortafolio data={categorias} columns={columnas} fileName="Categorias" />
+                <DataTablePortafolio data={productos} columns={columnas} fileName="Productos" />
             )}
 
-            <CategoriaFormModal
+            <ProductoFormModal
                 opened={modalAbierto}
                 onClose={() => setModalAbierto(false)}
-                onGuardado={invalidarCategorias}
-                categoria={categoriaEditar}
+                onGuardado={() => queryClient.invalidateQueries({ queryKey: ["productos"] })}
+                producto={productoEditar}
             />
         </Stack>
     );
