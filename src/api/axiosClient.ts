@@ -4,6 +4,9 @@ import type { ApiResponse } from './types';
 
 export const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:5285';
 
+// Clave única de la sesión en localStorage. Se comparte con AuthContext para no repetir el literal.
+export const STORAGE_KEY = 'portafolio.auth';
+
 // Redefinimos la forma en que axios hace su AxiosResponse por el ApiResponse del backend
 type ApiClient = Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch' | 'delete'> & {
   get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
@@ -49,6 +52,21 @@ api.interceptors.response.use((response) => {
 
   return apiResponse.data;
 }, (error) => {
-  const msg = error.response?.data?.message || 'No se pudo conectar con el servidor.';
+  // Token inválido/expirado: el backend responde 401 (la middleware de auth corta antes del controller,
+  // por eso NO trae ApiResponse). Lo tratamos como fin de sesión: limpiamos y expulsamos al login.
+  if (error.response?.status === 401) {
+    localStorage.removeItem(STORAGE_KEY);
+    setToken(null);
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    return Promise.reject(new Error('Tu sesión expiró. Inicia sesión de nuevo.'));
+  }
+
+  // error.response existe => el servidor respondió (aunque sea con error).
+  // error.response undefined => de verdad no hubo conexión (red caída / backend apagado).
+  const msg = error.response
+    ? (error.response.data?.message || 'Ocurrió un error en el servidor.')
+    : 'No se pudo conectar con el servidor.';
   return Promise.reject(new Error(msg));
 });

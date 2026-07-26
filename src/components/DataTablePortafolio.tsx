@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Table, Button, Group, Stack, TextInput, Text, UnstyledButton } from '@mantine/core';
+import { Table, Button, Group, Stack, TextInput, Text, UnstyledButton, ScrollArea } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import * as XLSX from 'xlsx';
@@ -32,6 +32,10 @@ interface DataTablePortafolioProps<T> {
   data: T[];
   columns: ColumnConfig<T>[];
   fileName?: string;
+  // Alto máximo del área scrollable. Default '60vh' = 60% del alto de la ventana: RESPONSIVE,
+  // escala solo con cada pantalla (a diferencia de un px fijo). Acepta cualquier unidad CSS
+  // ('70vh', 'calc(100vh - 320px)', o un número si algún caso puntual necesitara px).
+  maxHeight?: string | number;
 }
 
 type SortDir = 'asc' | 'desc';
@@ -40,6 +44,7 @@ export function DataTablePortafolio<T>({
   data,
   columns,
   fileName = 'Reporte',
+  maxHeight = '60vh',
 }: DataTablePortafolioProps<T>) {
   // 1) Estado de la UI: texto del buscador + criterio de orden.
   //    Fíjate que NUNCA guardamos "la data filtrada/ordenada" en estado; solo guardamos las
@@ -167,7 +172,11 @@ export function DataTablePortafolio<T>({
         </Group>
       </Group>
 
-      <Table striped highlightOnHover withTableBorder withColumnBorders>
+      {/* ScrollArea.Autosize + mah: la tabla crece hasta maxHeight (default '60vh', responsive);
+          pasado eso, el scroll ocurre DENTRO de la tabla (no en toda la página). stickyHeader deja
+          el <thead> fijo arriba mientras el usuario scrollea las filas, sin perder los encabezados. */}
+      <ScrollArea.Autosize mah={maxHeight}>
+        <Table striped highlightOnHover withTableBorder withColumnBorders stickyHeader>
         <Table.Thead>
           <Table.Tr>
             {/* key = índice de la columna: es único aunque dos columnas compartan accessor
@@ -219,7 +228,8 @@ export function DataTablePortafolio<T>({
             ))
           )}
         </Table.Tbody>
-      </Table>
+        </Table>
+      </ScrollArea.Autosize>
     </Stack>
   );
 }

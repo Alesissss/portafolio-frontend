@@ -1,6 +1,6 @@
 # 🖥️ Portafolio Frontend — SPA (React 19 + TypeScript)
 
-Single Page Application del **ERP de ventas e inventario**, construida con **React 19**, **Vite** y **TypeScript**, con UI en **Mantine v9**. Consume la API [portafolio-backend](https://github.com/Alesissss/portafolio-backend) (.NET + PostgreSQL).
+Single Page Application de un **sistema de gestión de ventas**, construida con **React 19**, **Vite** y **TypeScript**, con UI en **Mantine v9**. Consume la API [portafolio-backend](https://github.com/Alesissss/portafolio-backend) (.NET + PostgreSQL).
 
 ![React](https://img.shields.io/badge/React-19-61DAFB)
 ![Vite](https://img.shields.io/badge/Vite-build-646CFF)
