@@ -5,24 +5,17 @@ import { useQuery } from "@tanstack/react-query";
 import { ventaService } from "../../api/ventaService";
 import type { VentaDto } from "../../api/types";
 import { DataTablePortafolio, type ColumnConfig } from "../../components/DataTablePortafolio";
+import { useColoresEstadoVenta } from "../../theme";
 
 // Formatea un número como soles peruanos: 1234.5 -> "S/ 1,234.50"
 const soles = (n: number) =>
     new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(n);
 
-// Cada estado de venta tiene su color. Usa la paleta del theme (brand = esmeralda).
-function colorEstado(idEstado: string): string {
-    switch (idEstado) {
-        case "BO": return "gray";    // Borrador
-        case "GEN": return "blue";   // Generada
-        case "PAG": return "brand";  // Pagada
-        case "AN": return "red";     // Anulada
-        default: return "gray";
-    }
-}
-
 export function Ventas() {
     const navigate = useNavigate();
+    // Misma fuente de verdad que los gráficos de Reportes: un 'GEN' se ve igual en la
+    // tabla que en la torta, y cambia solo cuando cambia el modo claro/oscuro.
+    const { colorDe } = useColoresEstadoVenta();
 
     // ANTES: 2 useState (ventas + cargando) + función cargar + useEffect + try/catch.
     // AHORA: una sola llamada. useQuery se encarga del fetch, el loading, el error y la caché.
@@ -55,7 +48,7 @@ export function Ventas() {
             header: "Estado",
             accessor: "nombreEstadoVenta", // buscar/ordenar/exportar usan el nombre legible, no el código
             render: (row) => (
-                <Badge color={colorEstado(row.idEstadoVenta)} variant="light">
+                <Badge color={colorDe(row.idEstadoVenta)} variant="light">
                     {row.nombreEstadoVenta}
                 </Badge>
             ),

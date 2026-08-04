@@ -154,3 +154,46 @@ export interface EditarDetalleVentaDto {
     cantidad: number;
     observacion?: string;
 }
+
+// ---------------------------------------------------------------------------
+// REPORTES
+// El backend devuelve TODO el dashboard en un solo objeto: si cada gráfico pidiera
+// su propia llamada podrían llegar en momentos distintos y mostrar tajadas distintas.
+// ---------------------------------------------------------------------------
+
+export interface ResumenReporteDto {
+    totalVendido: number;
+    numeroVentas: number;
+    ticketPromedio: number;
+    porCobrar: number;
+}
+
+// 'fecha' llega como "2026-07-26" (DateOnly de C#), sin hora: así no hay corrimientos
+// de huso horario al construir el Date en el navegador.
+export interface PuntoSerieDto {
+    fecha: string;
+    total: number;
+    ventas: number;
+}
+
+export interface TopProductoDto {
+    idProducto: number;
+    nombre: string;
+    total: number;
+    cantidad: number;
+}
+
+export interface VentasPorEstadoDto {
+    idEstadoVenta: string;
+    nombre: string;
+    ventas: number;
+    total: number;
+}
+
+export interface ReporteDashboardDto {
+    resumen: ResumenReporteDto;
+    granularidad: "dia" | "mes";
+    serie: PuntoSerieDto[];
+    topProductos: TopProductoDto[];
+    porEstado: VentasPorEstadoDto[];
+}

@@ -1,4 +1,4 @@
-import { createTheme, type MantineColorsTuple } from "@mantine/core";
+import { createTheme, useComputedColorScheme, type MantineColorsTuple } from "@mantine/core";
 
 // Color de marca (teal / esmeralda). Una tupla de Mantine SIEMPRE tiene 10 tonos (0 = más claro,
 // 9 = más oscuro). Mantine elige cuál usar como "primario" según primaryShade (abajo).
@@ -41,3 +41,39 @@ export const theme = createTheme({
         dark,
     },
 });
+
+// ---------------------------------------------------------------------------
+// COLORES DE LOS ESTADOS DE VENTA
+// ---------------------------------------------------------------------------
+// Una sola fuente de verdad para los badges (Ventas, VentaDetalle) y los gráficos
+// (Reportes): un 'GEN' tiene que verse igual en la tabla que en la torta.
+//
+// Los tonos NO son elegidos a ojo: pasan la validación de la guía de dataviz —
+// banda de luminosidad OKLCH, piso de croma, separación bajo daltonismo (deuteranopía,
+// protanopía, tritanopía) y contraste contra la superficie.
+//
+// El modo oscuro NO es el claro invertido: es una selección aparte, porque la banda de
+// luminosidad válida sobre fondo oscuro es MÁS OSCURA ([0.48, 0.67]) que sobre fondo
+// claro ([0.43, 0.77]). Aquí solo el azul necesitó cambiar; los otros tres ya caían
+// dentro de ambas bandas.
+//
+// Un gris "de borrador" quedó descartado a propósito: reprueba el piso de croma (lee
+// como ausencia de dato) y bajo daltonismo se confunde con el azul de 'generada'.
+// Por eso BO va en ámbar, que además comunica mejor "pendiente".
+export const COLOR_ESTADO_VENTA: Record<"light" | "dark", Record<string, string>> = {
+    light: { BO: "#c17d0b", GEN: "#1971c2", PAG: "#0ca678", AN: "#c92a2a" },
+    dark: { BO: "#c17d0b", GEN: "#339af0", PAG: "#0ca678", AN: "#c92a2a" },
+};
+
+// Para un código de estado desconocido (no debería pasar, pero el backend manda strings).
+const NEUTRO: Record<"light" | "dark", string> = { light: "#868e96", dark: "#8290ab" };
+
+export function useColoresEstadoVenta() {
+    const esquema = useComputedColorScheme("light", { getInitialValueInEffect: true });
+    const colores = COLOR_ESTADO_VENTA[esquema];
+    return {
+        esquema,
+        colores,
+        colorDe: (idEstado: string) => colores[idEstado] ?? NEUTRO[esquema],
+    };
+}

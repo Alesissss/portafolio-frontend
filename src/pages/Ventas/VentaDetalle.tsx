@@ -29,25 +29,18 @@ import {
 } from "@tabler/icons-react";
 import { ventaService } from "../../api/ventaService";
 import { PagarVentaModal } from "./PagarVentaModal";
+import { useColoresEstadoVenta } from "../../theme";
 
 // Formatea soles peruanos: 1234.5 -> "S/ 1,234.50" (mismo helper que la lista).
 const soles = (n: number) =>
     new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(n);
 
-function colorEstado(idEstado: string): string {
-    switch (idEstado) {
-        case "BO": return "gray";   // Borrador
-        case "GEN": return "blue";  // Generada
-        case "PAG": return "brand"; // Pagada
-        case "AN": return "red";    // Anulada
-        default: return "gray";
-    }
-}
-
 export function VentaDetalle() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     const queryClient = useQueryClient();
+    // Misma fuente de verdad que la lista y que los gráficos de Reportes.
+    const { colorDe } = useColoresEstadoVenta();
     const [pagarAbierto, setPagarAbierto] = useState(false);
 
     const { data: venta, isLoading, isError } = useQuery({
@@ -224,7 +217,7 @@ export function VentaDetalle() {
                     </ActionIcon>
                     <div>
                         <Title order={2}>Detalle de Venta</Title>
-                        <Badge color={colorEstado(venta.idEstadoVenta)} variant="light" mt={4}>
+                        <Badge color={colorDe(venta.idEstadoVenta)} variant="light" mt={4}>
                             {venta.nombreEstadoVenta}
                         </Badge>
                     </div>

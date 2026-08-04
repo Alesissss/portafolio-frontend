@@ -10,6 +10,7 @@ import { Layout } from './components/Layout';
 import { Ventas } from './pages/Ventas/Ventas';
 import { VentaForm } from './pages/Ventas/VentaForm';
 import { VentaDetalle } from './pages/Ventas/VentaDetalle';
+import { Reportes } from './pages/Reportes/Reportes';
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="ventas/nueva" element={<VentaForm />} /> {/* URL: /ventas/nueva */}
             <Route path="ventas/:id" element={<VentaDetalle />} /> {/* URL: /ventas/:id */}
             <Route path="ventas/:id/editar" element={<VentaForm />} /> {/* URL: /ventas/:id/editar */}
+            <Route path="reportes" element={<Reportes />} /> {/* URL: /reportes */}
           </Route>
         </Route>
 

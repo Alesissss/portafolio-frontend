@@ -27,6 +27,7 @@ import {
     IconBrandDropbox,
     IconUsers,
     IconShoppingBag,
+    IconReportAnalytics,
 } from "@tabler/icons-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -39,6 +40,7 @@ const NAV_ITEMS = [
     { label: "Productos", to: "/productos", icon: IconBrandDropbox },
     { label: "Usuarios", to: "/usuarios", icon: IconUsers },
     { label: "Ventas", to: "/ventas", icon: IconShoppingBag },
+    { label: "Reportes", to: "/reportes", icon: IconReportAnalytics },
 ];
 
 // Anchos del navbar en desktop: rail de solo íconos vs. barra completa.
