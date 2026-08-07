@@ -6,12 +6,21 @@ import { ventaService } from "../../api/ventaService";
 import type { VentaDto } from "../../api/types";
 import { DataTablePortafolio, type ColumnConfig } from "../../components/DataTablePortafolio";
 import { useColoresEstadoVenta } from "../../theme";
+import { useState } from "react";
+import { useDebouncedValue } from "@mantine/hooks";
 
 // Formatea un número como soles peruanos: 1234.5 -> "S/ 1,234.50"
 const soles = (n: number) =>
     new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(n);
 
 export function Ventas() {
+    // Paginación del backend
+    const [paginaActual, setPaginaActual] = useState(1);
+    const [registrosPorPagina, setRegistrosPorPagina] = useState(10);
+    // Búsqueda en el backend
+    const [search, setSearch] = useState("");
+    const [debouncedSearch] = useDebouncedValue(search, 300);
+
     const navigate = useNavigate();
     // Misma fuente de verdad que los gráficos de Reportes: un 'GEN' se ve igual en la
     // tabla que en la torta, y cambia solo cuando cambia el modo claro/oscuro.
@@ -23,14 +32,17 @@ export function Ventas() {
     // - isLoading: true SOLO en la primera carga sin caché (justo el spinner inicial).
     // - isError/error: si el fetch falló.
     const {
-        data: ventas = [],
+        data: resultadoPaginado,
         isLoading,
         isError,
         error,
     } = useQuery({
-        queryKey: ["ventas"], // la "dirección" de estos datos en la caché
-        queryFn: ventaService.listarVentas,
+        queryKey: ["ventas", paginaActual, registrosPorPagina, debouncedSearch], // la "dirección" de estos datos en la caché
+        queryFn: () => ventaService.listarVentas(paginaActual, registrosPorPagina, debouncedSearch), // la función que hace el fetch
     });
+
+    const ventas = resultadoPaginado?.elementos ?? [];
+    const totalPaginas = resultadoPaginado?.totalPaginas ?? 1;
 
     // --- Columnas de la tabla ---
     const columnas: ColumnConfig<VentaDto>[] = [
@@ -126,7 +138,17 @@ export function Ventas() {
                     </Text>
                 </Center>
             ) : (
-                <DataTablePortafolio data={ventas} columns={columnas} fileName="Ventas" />
+                <DataTablePortafolio 
+                    data={ventas} 
+                    columns={columnas} 
+                    fileName="Ventas" 
+                    totalPaginas={totalPaginas} 
+                    paginaActual={paginaActual} 
+                    onCambiarPagina={setPaginaActual} 
+                    registrosPorPagina={registrosPorPagina} 
+                    onCambiarRegistrosPorPagina={setRegistrosPorPagina} 
+                    searchValue={search} 
+                    onSearchChange={setSearch} />
             )}
         </Stack>
     );

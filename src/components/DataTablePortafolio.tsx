@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Table, Button, Group, Stack, TextInput, Text, UnstyledButton, ScrollArea } from '@mantine/core';
+import { Table, Button, Group, Stack, TextInput, Text, UnstyledButton, ScrollArea, Pagination, Select } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import * as XLSX from 'xlsx';
@@ -36,6 +36,15 @@ interface DataTablePortafolioProps<T> {
   // escala solo con cada pantalla (a diferencia de un px fijo). Acepta cualquier unidad CSS
   // ('70vh', 'calc(100vh - 320px)', o un número si algún caso puntual necesitara px).
   maxHeight?: string | number;
+  // Paginación del backend
+  totalPaginas?: number;
+  paginaActual?: number;
+  onCambiarPagina?: (pagina: number) => void;
+  registrosPorPagina?: number;
+  onCambiarRegistrosPorPagina?: (limite: number) => void;
+  // Búsqueda global en la BD
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 type SortDir = 'asc' | 'desc';
@@ -45,12 +54,23 @@ export function DataTablePortafolio<T>({
   columns,
   fileName = 'Reporte',
   maxHeight = '60vh',
+  totalPaginas,
+  paginaActual,
+  onCambiarPagina,
+  registrosPorPagina = 10,
+  onCambiarRegistrosPorPagina,
+  searchValue,
+  onSearchChange,
 }: DataTablePortafolioProps<T>) {
   // 1) Estado de la UI: texto del buscador + criterio de orden.
   //    Fíjate que NUNCA guardamos "la data filtrada/ordenada" en estado; solo guardamos las
   //    INSTRUCCIONES (qué buscar, por qué columna ordenar) y derivamos el resultado abajo.
-  const [search, setSearch] = useState('');
-  const [debouncedSearch] = useDebouncedValue(search, 200);
+  const [internalSearch, setInternalSearch] = useState('');
+  const [debouncedInternalSearch] = useDebouncedValue(internalSearch, 200);
+
+  const isServerSearch = onSearchChange !== undefined;
+  const currentSearch = isServerSearch ? (searchValue ?? '') : debouncedInternalSearch;
+
   const [sortBy, setSortBy] = useState<keyof T | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
@@ -58,12 +78,14 @@ export function DataTablePortafolio<T>({
 
   // 2a) Filtrado global: una fila pasa si ALGUNA columna contiene el texto buscado.
   const filteredData = useMemo(() => {
-    const q = debouncedSearch.trim().toLowerCase();
+    if (isServerSearch) return data;
+
+    const q = currentSearch.trim().toLowerCase();
     if (!q) return data;
     return data.filter((row) =>
       columns.some((col) => getCellText(row, col).toLowerCase().includes(q)),
     );
-  }, [data, columns, debouncedSearch]);
+  }, [data, columns, currentSearch, isServerSearch]);
 
   // 2b) Ordenamiento sobre lo ya filtrado. Copiamos el arreglo ([...]) porque Array.sort MUTA
   //     en sitio; si ordenáramos filteredData directamente estaríamos mutando datos derivados
@@ -74,14 +96,12 @@ export function DataTablePortafolio<T>({
     copia.sort((a, b) => {
       const va = a[sortBy];
       const vb = b[sortBy];
-      // Nulos/undefined siempre al final, sin importar la dirección.
       if (va == null) return 1;
       if (vb == null) return -1;
       let cmp: number;
       if (typeof va === 'number' && typeof vb === 'number') {
-        cmp = va - vb; // comparación numérica real (evita "10" < "9" del orden alfabético)
+        cmp = va - vb;
       } else {
-        // localeCompare con numeric:true ordena bien acentos y números embebidos ("item2" < "item10").
         cmp = String(va).localeCompare(String(vb), undefined, { numeric: true });
       }
       return sortDir === 'asc' ? cmp : -cmp;
@@ -154,9 +174,16 @@ export function DataTablePortafolio<T>({
       <Group justify="space-between" align="flex-end">
         <TextInput
           label="Buscar"
-          placeholder="Buscar en todas las columnas..."
-          value={search}
-          onChange={(e) => setSearch(e.currentTarget.value)}
+          placeholder={isServerSearch ? "Buscar en todo el registro..." : "Buscar en esta tabla..."}
+          value={isServerSearch ? searchValue : internalSearch}
+          onChange={(e) => {
+            const val = e.currentTarget.value;
+            if (isServerSearch) {
+              onSearchChange(val); // Notifica al componente padre (ej. Ventas.tsx)
+            } else {
+              setInternalSearch(val); // Filtra de forma local la tablita pequeña
+            }
+          }}
           w={280}
         />
         <Group>
@@ -177,59 +204,92 @@ export function DataTablePortafolio<T>({
           el <thead> fijo arriba mientras el usuario scrollea las filas, sin perder los encabezados. */}
       <ScrollArea.Autosize mah={maxHeight}>
         <Table striped highlightOnHover withTableBorder withColumnBorders stickyHeader>
-        <Table.Thead>
-          <Table.Tr>
-            {/* key = índice de la columna: es único aunque dos columnas compartan accessor
-                (ej. la de datos y la de acciones apuntando ambas a 'idCategoria'). */}
-            {columns.map((col, colIdx) => {
-              const esOrdenable = col.sortable !== false;
-              const activa = sortBy === col.accessor;
-              // Indicador de orden sin dependencia de iconos: ▲ asc, ▼ desc, ↕ inactiva.
-              const flecha = !esOrdenable ? '' : activa ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕';
-              return (
-                <Table.Th key={colIdx}>
-                  {esOrdenable ? (
-                    <UnstyledButton
-                      onClick={() => handleSort(col)}
-                      style={{ display: 'inline-flex', alignItems: 'center' }}
-                    >
-                      <Text fw={600} fz="sm">
-                        {col.header}
-                        <Text span c="dimmed">{flecha}</Text>
-                      </Text>
-                    </UnstyledButton>
-                  ) : (
-                    col.header
-                  )}
-                </Table.Th>
-              );
-            })}
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {!hayFilas ? (
+          <Table.Thead>
             <Table.Tr>
-              <Table.Td colSpan={columns.length}>
-                <Text ta="center" c="dimmed" py="md">
-                  No se encontraron registros disponibles.
-                </Text>
-              </Table.Td>
+              {/* key = índice de la columna: es único aunque dos columnas compartan accessor
+                (ej. la de datos y la de acciones apuntando ambas a 'idCategoria'). */}
+              {columns.map((col, colIdx) => {
+                const esOrdenable = col.sortable !== false;
+                const activa = sortBy === col.accessor;
+                // Indicador de orden sin dependencia de iconos: ▲ asc, ▼ desc, ↕ inactiva.
+                const flecha = !esOrdenable ? '' : activa ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕';
+                return (
+                  <Table.Th key={colIdx}>
+                    {esOrdenable ? (
+                      <UnstyledButton
+                        onClick={() => handleSort(col)}
+                        style={{ display: 'inline-flex', alignItems: 'center' }}
+                      >
+                        <Text fw={600} fz="sm">
+                          {col.header}
+                          <Text span c="dimmed">{flecha}</Text>
+                        </Text>
+                      </UnstyledButton>
+                    ) : (
+                      col.header
+                    )}
+                  </Table.Th>
+                );
+              })}
             </Table.Tr>
-          ) : (
-            sortedData.map((row, rowIdx) => (
-              <Table.Tr key={rowIdx}>
-                {columns.map((col, colIdx) => (
-                  <Table.Td key={colIdx}>
-                    {/* Si la columna trae render personalizado lo usamos; si no, texto plano. */}
-                    {col.render ? col.render(row) : getCellText(row, col)}
-                  </Table.Td>
-                ))}
+          </Table.Thead>
+          <Table.Tbody>
+            {!hayFilas ? (
+              <Table.Tr>
+                <Table.Td colSpan={columns.length}>
+                  <Text ta="center" c="dimmed" py="md">
+                    No se encontraron registros disponibles.
+                  </Text>
+                </Table.Td>
               </Table.Tr>
-            ))
-          )}
-        </Table.Tbody>
+            ) : (
+              sortedData.map((row, rowIdx) => (
+                <Table.Tr key={rowIdx}>
+                  {columns.map((col, colIdx) => (
+                    <Table.Td key={colIdx}>
+                      {/* Si la columna trae render personalizado lo usamos; si no, texto plano. */}
+                      {col.render ? col.render(row) : getCellText(row, col)}
+                    </Table.Td>
+                  ))}
+                </Table.Tr>
+              ))
+            )}
+          </Table.Tbody>
         </Table>
       </ScrollArea.Autosize>
+      {Boolean(totalPaginas && totalPaginas > 0 && paginaActual && onCambiarPagina) && (
+        <Group justify="space-between" align="center">
+          {/* Selector de cantidad por página */}
+          {onCambiarRegistrosPorPagina && (
+            <Group gap="xs" align="center">
+              <Text fz="sm" c="dimmed">Registros por página:</Text>
+              <Select
+                value={String(registrosPorPagina)}
+                onChange={(val) => {
+                  if (val) {
+                    onCambiarRegistrosPorPagina(Number(val));
+                    if (onCambiarPagina) {
+                      onCambiarPagina(1); // Reiniciar siempre a la página 1 al cambiar el límite
+                    }
+                  }
+                }}
+                data={['10', '25', '50', '100']}
+                w={80}
+                allowDeselect={false}
+              />
+            </Group>
+          )}
+
+          {/* Paginador numérico de Mantine */}
+          {totalPaginas! > 1 && (
+            <Pagination
+              value={paginaActual!}
+              onChange={onCambiarPagina!}
+              total={totalPaginas!}
+            />
+          )}
+        </Group>
+      )}
     </Stack>
   );
 }

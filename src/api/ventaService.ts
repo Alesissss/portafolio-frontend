@@ -1,10 +1,13 @@
 import { api } from "./axiosClient";
-import type { VentaDto, RegistrarRequestVentaDto, EditarRequestVentaDto } from "./types";
+import type { PaginacionResponse, VentaDto, RegistrarRequestVentaDto, EditarRequestVentaDto } from "./types";
 
 export const ventaService = {
     // Listar las ventas
-    listarVentas: (): Promise<VentaDto[]> =>
-        api.get<VentaDto[]>('/api/venta'),
+    listarVentas: async (pagina: number = 1, registrosPorPagina: number = 10, search?: string): Promise<PaginacionResponse<VentaDto>> => {
+        return await api.get<PaginacionResponse<VentaDto>>('/api/venta', {
+            params: { pagina, registrosPorPagina, search }
+        });
+    },
 
     obtenerUnaVenta: (id: string): Promise<VentaDto> =>
         api.get<VentaDto>(`/api/venta/${id}`),

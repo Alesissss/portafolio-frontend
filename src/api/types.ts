@@ -5,6 +5,15 @@ export interface ApiResponse<T> {
     data: T;
 }
 
+// envoltura Paginacion
+export interface PaginacionResponse<T> {
+    totalRegistros: number;
+    paginaActual: number;
+    registrosPorPagina: number;
+    totalPaginas: number;
+    elementos: T[];
+}
+
 // Dtos de Login. UsuarioAuthDto es INDEPENDIENTE del UsuarioDto del CRUD (cada contexto su DTO).
 export interface UsuarioAuthDto {
     idUsuario: string; // Guid para C#, se recibe como string en el JSON del DTO
